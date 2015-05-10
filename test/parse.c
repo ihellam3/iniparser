@@ -17,7 +17,7 @@ int main(int argc, char * argv[])
     }
 
     ini = iniparser_load(ini_name);
-    iniparser_dump(ini, stdout);
+    iniparser_dumpsection_ini(ini, "multi", stdout);
     iniparser_freedict(ini);
 
     return 0 ;

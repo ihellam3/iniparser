@@ -12,13 +12,16 @@ RM      = rm -f
 
 default: all
 
-all: iniexample parse
+all: iniexample parse ex
 
 iniexample: iniexample.c
 	$(CC) $(CFLAGS) -o iniexample iniexample.c -I../src -L.. -liniparser
 
 parse: parse.c
 	$(CC) $(CFLAGS) -o parse parse.c -I../src -L.. -liniparser
+
+ex: ex.c
+	$(CC) $(CFLAGS) -o ex ex.c -I../src -L.. -liniparser
 
 clean veryclean:
 	$(RM) iniexample example.ini parse

@@ -308,6 +308,12 @@ dictionary * iniparser_load(const char * ininame);
 /*--------------------------------------------------------------------------*/
 void iniparser_freedict(dictionary * d);
 
+
+void iniparser_dump_sh(dictionary * d, FILE * f);
+void iniparser_dumpsection_sh(dictionary * d, char *s, FILE * f);
+void iniparser_dump_json(dictionary * d, FILE * f);
+void iniparser_dumpsection_json(dictionary * d, char *s, FILE *f);
+
 #ifdef __cplusplus
 }
 #endif

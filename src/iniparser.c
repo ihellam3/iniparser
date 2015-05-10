@@ -11,7 +11,8 @@
 #include "iniparser.h"
 
 /*---------------------------- Defines -------------------------------------*/
-#define ASCIILINESZ         (1024)
+#define ASCIILINESZ         (4096)
+#define KEY_MAX             (512)
 #define INI_INVALID_KEY     ((char*)-1)
 
 /*---------------------------------------------------------------------------
@@ -255,6 +256,125 @@ void iniparser_dumpsection_ini(dictionary * d, char * s, FILE * f)
     fprintf(f, "\n");
     free(keym);
     return ;
+}
+
+void iniparser_dump_sh(dictionary * d, FILE * f)
+{
+    int     i ;
+    int     nsec ;
+    char *  secname ;
+
+    if (d==NULL || f==NULL) return ;
+
+    fprintf(f, "#!/bin/sh\n");
+    nsec = iniparser_getnsec(d);
+    if (nsec<1) {
+        /* No section in file: dump all keys as they are */
+        for (i=0 ; i<d->size ; i++) {
+            if (d->key[i]==NULL)
+                continue ;
+            fprintf(f, "%s = %s\n", d->key[i], d->val[i]);
+        }
+        return ;
+    }
+    for (i=0 ; i<nsec ; i++) {
+        secname = iniparser_getsecname(d, i) ;
+        iniparser_dumpsection_sh(d, secname, f) ;
+    }
+    fprintf(f, "\n");
+    return ;
+}
+
+void iniparser_dumpsection_sh(dictionary * d, char *s, FILE * f)
+{
+    int     j ;
+    char    *keym;
+    int     secsize ;
+
+    if (d==NULL || f==NULL) return ;
+    if (! iniparser_find_entry(d, s)) return ;
+
+    secsize = (int)strlen(s) + 2;
+    keym = malloc(secsize);
+    snprintf(keym, secsize, "%s:", s);
+    for (j=0 ; j<d->size ; j++) {
+        if (d->key[j]==NULL)
+            continue;
+        if (!strncmp(d->key[j], keym, secsize-1)) {
+            fprintf(f,
+                    "export %s_%s=%s\n",
+                    s,
+                    d->key[j]+secsize-1,
+                    d->val[j] ? d->val[j] : "");
+        }
+    }
+    fprintf(f, "\n");
+    free(keym);
+    return ;
+}
+
+void iniparser_dump_json(dictionary * d, FILE * f)
+{
+    int     i ;
+    int     nsec ;
+    char *  secname ;
+
+    if (d==NULL || f==NULL) return ;
+
+    nsec = iniparser_getnsec(d);
+    if (nsec<1) {
+        /* No section in file: dump all keys as they are */
+        for (i=0 ; i<d->size ; i++) {
+            if (d->key[i]==NULL)
+                continue ;
+            fprintf(f, "%s = %s\n", d->key[i], d->val[i]);
+        }
+        return ;
+    }
+    for (i=0 ; i<nsec ; i++) {
+        secname = iniparser_getsecname(d, i) ;
+        iniparser_dumpsection_json(d, secname, f) ;
+    }
+    fprintf(f, "\n");
+    return ;
+}
+
+void iniparser_dumpsection_json(dictionary * d, char *s, FILE *f)
+{
+    int     j ;
+    char    *keym;
+    int     secsize;
+    char buf[512];
+
+    if (d==NULL || f==NULL) return ;
+    if (! iniparser_find_entry(d, s)) return ;
+
+    secsize = (int)strlen(s) + 2;
+    buf[0] = '\0';
+    keym = malloc(secsize);
+    fprintf(f, "var %s={\n", s);
+    snprintf(keym, secsize, "%s:", s);
+    for (j=0 ; j<d->size ; j++) {
+        if (d->key[j]==NULL)
+            continue;
+        if (!strncmp(d->key[j], keym, secsize-1)) {
+            if(strlen(buf) > 0) {
+                fprintf(f, "%s,\n", buf);
+            }
+
+            sprintf(buf, 
+                    "\"%s\"=\"%s\"",
+                    d->key[j]+secsize-1,
+                    d->val[j] ? d->val[j] : "");
+            /*fprintf(f,
+                    "\"%s\"=\"%s\",\n",
+                    d->key[j]+secsize-1,
+                    d->val[j] ? d->val[j] : "");*/
+        }
+    }
+    fprintf(f, "%s\n};\n", buf);
+    free(keym);
+    return;
 }
 
 /*-------------------------------------------------------------------------*/
@@ -881,6 +1001,74 @@ out:
     if (prev_line) {
         free(prev_line);
         prev_line = NULL;
+    }
+    if (in) {
+        fclose(in);
+    }
+    return dict ;
+}
+
+dictionary * iniparser_load_sh(const char * ininame)
+{
+    FILE * in = NULL ;
+    char * export = "export";
+
+    char line[ASCIILINESZ+1] ;
+    char buf[KEY_MAX+1];
+    char * t = NULL;
+    char *key = NULL;
+    char *val = NULL;
+    char *section = NULL;
+
+    int  len;
+    int  errs=0;
+    int  seckey_size=0;
+    int l_ex = strlen(export);
+
+    dictionary * dict = NULL ;
+
+    if ((in=fopen(ininame, "r"))==NULL) {
+        fprintf(stderr, "iniparser: cannot open %s\n", ininame);
+        goto out;
+    }
+
+    dict = dictionary_new(0) ;
+    if (!dict) {
+        goto out;
+    }
+
+    memset(line,    0, ASCIILINESZ);
+    while (fgets(line, ASCIILINESZ, in)!=NULL) {
+        if (!strncmp(line, export, l_ex)) {
+            key = line+l_ex+1;
+            while(*key == ' ') {
+                key++;
+            }
+
+            val = strstr(key, "=");
+            if(NULL != val) {
+                *val = '\0';
+                val++;
+                *(val+strlen(val)-1) = '\0';
+
+                t = key;
+                section = strstr(t, "_");
+                if(section != NULL) {
+                    *section = '\0';
+                    key = section+1;
+                    section = t;
+                    dictionary_set(dict, section, NULL);
+                    snprintf(buf, KEY_MAX, "%s:%s", section, key);
+                    dictionary_set(dict, buf, val);
+                }
+            }
+        }
+    }
+
+out:
+    if (errs) {
+        dictionary_del(dict);
+        dict = NULL ;
     }
     if (in) {
         fclose(in);
