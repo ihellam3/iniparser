@@ -313,13 +313,13 @@ void iniparser_dumpsection_sh(dictionary * d, char *s, FILE * f)
     return ;
 }
 
-void iniparser_dump_json(dictionary * d, FILE * f)
+int iniparser_dump_json(dictionary * d, FILE * f)
 {
-    int     i ;
+    int     i, total = 0;
     int     nsec ;
     char *  secname ;
 
-    if (d==NULL || f==NULL) return ;
+    if (d==NULL || f==NULL) return 0;
 
     nsec = iniparser_getnsec(d);
     if (nsec<1) {
@@ -327,43 +327,43 @@ void iniparser_dump_json(dictionary * d, FILE * f)
         for (i=0 ; i<d->size ; i++) {
             if (d->key[i]==NULL)
                 continue ;
-            fprintf(f, "%s = %s\n", d->key[i], d->val[i]);
+            total += fprintf(f, "\"%s\" : \"%s\"\n", d->key[i], d->val[i]);
         }
-        return ;
+        return total;
     }
     for (i=0 ; i<nsec ; i++) {
         secname = iniparser_getsecname(d, i) ;
-        iniparser_dumpsection_json(d, secname, f) ;
+        total += iniparser_dumpsection_json(d, secname, f) ;
     }
-    fprintf(f, "\n");
-    return ;
+    total += fprintf(f, "\n");
+    return total;
 }
 
-void iniparser_dumpsection_json(dictionary * d, char *s, FILE *f)
+int iniparser_dumpsection_json(dictionary * d, char *s, FILE *f)
 {
-    int     j ;
+    int     j, total = 0;
     char    *keym;
     int     secsize;
     char buf[512];
 
-    if (d==NULL || f==NULL) return ;
-    if (! iniparser_find_entry(d, s)) return ;
+    if (d==NULL || f==NULL) return 0;
+    if (! iniparser_find_entry(d, s)) return 0;
 
     secsize = (int)strlen(s) + 2;
     buf[0] = '\0';
     keym = malloc(secsize);
-    fprintf(f, "var %s={\n", s);
+    total += fprintf(f, "var %s={\n", s);
     snprintf(keym, secsize, "%s:", s);
     for (j=0 ; j<d->size ; j++) {
         if (d->key[j]==NULL)
             continue;
         if (!strncmp(d->key[j], keym, secsize-1)) {
             if(strlen(buf) > 0) {
-                fprintf(f, "%s,\n", buf);
+                total += fprintf(f, "%s,\n", buf);
             }
 
-            sprintf(buf, 
-                    "\"%s\"=\"%s\"",
+            total += sprintf(buf, 
+                    "\"%s\":\"%s\"",
                     d->key[j]+secsize-1,
                     d->val[j] ? d->val[j] : "");
             /*fprintf(f,
@@ -372,7 +372,7 @@ void iniparser_dumpsection_json(dictionary * d, char *s, FILE *f)
                     d->val[j] ? d->val[j] : "");*/
         }
     }
-    fprintf(f, "%s\n};\n", buf);
+    total += fprintf(f, "%s\n};\n", buf);
     free(keym);
     return;
 }
@@ -1020,9 +1020,7 @@ dictionary * iniparser_load_sh(const char * ininame)
     char *val = NULL;
     char *section = NULL;
 
-    int  len;
     int  errs=0;
-    int  seckey_size=0;
     int l_ex = strlen(export);
 
     dictionary * dict = NULL ;
@@ -1039,6 +1037,7 @@ dictionary * iniparser_load_sh(const char * ininame)
 
     memset(line,    0, ASCIILINESZ);
     while (fgets(line, ASCIILINESZ, in)!=NULL) {
+        strlwc(line);
         if (!strncmp(line, export, l_ex)) {
             key = line+l_ex+1;
             while(*key == ' ') {
@@ -1074,6 +1073,33 @@ out:
         fclose(in);
     }
     return dict ;
+}
+
+int iniparser_find_set(dictionary *d , const char * ckey, const char * cval)
+{
+    int ok = 0;
+    char *key, *sec, *t, *val;
+    char buf[KEY_MAX+1];
+
+    sec = xstrdup(ckey);
+    strlwc(sec);
+
+    t = strstr(sec, "_");
+    if(t != NULL) {
+        *t = '\0';
+        key = t+1;
+
+        snprintf(buf, KEY_MAX, "%s:%s", sec, key);
+        val = dictionary_get(d, buf, INI_INVALID_KEY);
+        if (INI_INVALID_KEY != val) {
+            dictionary_set(d, sec, NULL);
+            dictionary_set(d, buf, cval);
+            ok = 1;
+        }
+    }
+
+    free(sec);
+    return ok;
 }
 
 /*-------------------------------------------------------------------------*/

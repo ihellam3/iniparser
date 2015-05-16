@@ -54,6 +54,8 @@ int main(int argc, char * argv[])
     }
 
     ini = iniparser_load_sh(ini_name);
+    iniparser_find_set(ini, "policy_host_noss", "hello");
+    iniparser_find_set(ini, "policy_host_noss2", "hello");
     iniparser_dump_sh(ini, stdout);
     iniparser_freedict(ini);
 
