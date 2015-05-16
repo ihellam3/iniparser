@@ -1021,7 +1021,7 @@ dictionary * iniparser_load_sh(const char * ininame)
     char *section = NULL;
 
     int  errs=0;
-    int l_ex = strlen(export);
+    int tmpl, l_ex = strlen(export);
 
     dictionary * dict = NULL ;
 
@@ -1037,7 +1037,7 @@ dictionary * iniparser_load_sh(const char * ininame)
 
     memset(line,    0, ASCIILINESZ);
     while (fgets(line, ASCIILINESZ, in)!=NULL) {
-        strlwc(line);
+        //strlwc(line);
         if (!strncmp(line, export, l_ex)) {
             key = line+l_ex+1;
             while(*key == ' ') {
@@ -1048,7 +1048,13 @@ dictionary * iniparser_load_sh(const char * ininame)
             if(NULL != val) {
                 *val = '\0';
                 val++;
-                *(val+strlen(val)-1) = '\0';
+
+                tmpl = strlen(val);
+                if(*(val+tmpl-2) == '\r') {
+                    *(val+strlen(val)-2) = '\0';
+                } else {
+                    *(val+strlen(val)-1) = '\0';
+                }
 
                 t = key;
                 section = strstr(t, "_");
@@ -1056,6 +1062,9 @@ dictionary * iniparser_load_sh(const char * ininame)
                     *section = '\0';
                     key = section+1;
                     section = t;
+
+                    strlwc(section);
+                    strlwc(key);
                     dictionary_set(dict, section, NULL);
                     snprintf(buf, KEY_MAX, "%s:%s", section, key);
                     dictionary_set(dict, buf, val);
