@@ -41,4 +41,4 @@ export policy_host_ss=www.google.com,www.youtube.com
 export policy_host_noss=
 export policy_pal=/etc/pal-list.txt
 
-
+./parse ini ss.ini update

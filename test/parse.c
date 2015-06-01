@@ -5,7 +5,7 @@
 
 #include "iniparser.h"
 
-int main(int argc, char * argv[])
+int main(int argc, char * argv[], char * envp[])
 {
     dictionary *ini;
 
@@ -34,6 +34,22 @@ int main(int argc, char * argv[])
         iniparser_dump_ini(ini, stdout);
     } else if(!strcmp(argv[3], "json")) {
         iniparser_dump_json(ini, stdout);
+    } else if(!strcmp(argv[3], "update")) {
+        char** env;
+        for (env = envp; *env != 0; env++) {
+            char* this_env = xstrdup(*env);
+            char *v = strstr(this_env, "=");
+            if(v != NULL) {
+                *v = '\0';
+                v += 1;
+                if(iniparser_find_set(ini, this_env, v)) {
+                    printf("%s=%s\n", this_env, v);
+                }
+            }
+            if(this_env != NULL) {
+                free(this_env);
+            }
+        }
     } else {
         fprintf(stderr, "output format:%s not found\n", argv[3]);
     }
