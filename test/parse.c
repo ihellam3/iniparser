@@ -42,14 +42,14 @@ int main(int argc, char * argv[], char * envp[])
             if(v != NULL) {
                 *v = '\0';
                 v += 1;
-                if(iniparser_find_set(ini, this_env, v)) {
-                    printf("%s=%s\n", this_env, v);
-                }
+                iniparser_find_set(ini, this_env, v);
             }
             if(this_env != NULL) {
                 free(this_env);
             }
         }
+
+        iniparser_dump_sh(ini, stdout);
     } else {
         fprintf(stderr, "output format:%s not found\n", argv[3]);
     }
