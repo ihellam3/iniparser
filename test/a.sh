@@ -1,10 +1,11 @@
 #!/bin/sh
-export sS_mode=1
+export ss_mode_old=88
+export ss_mode=1
 export ss_server=1.1.1.1
 export ss_port=8080
-export ss_methor=rc4-mD5
+export ss_methor=rc4-md5
 export ss_timeout=600
-export ss_password=asdEasd
+export ss_password=asdfaADFSDF
 export ss_socks5=1080
 export ss_redirect_port=3333
 export ss_httpport=8118
