@@ -64,7 +64,6 @@ int main(int argc, char * argv[], char * envp[]) {
             fprintf(stderr, "load %s error\n", argv[n]);
             return -1;
         }
-        dictionary_dump(ini, stdout);
         for (n = n+1;n < argc; n++) {
             ini_tmp = iniparser_load_from_file(argv[n]);
             if(NULL == ini_tmp) {
@@ -78,8 +77,8 @@ int main(int argc, char * argv[], char * envp[]) {
         iniparser_dump_sh(ini, stdout);
         iniparser_freedict(ini);
     } else if(!strcmp(argv[1], "convert")) {
-        if(argc != 3) {
-            fprintf(stderr, "ssparser convert file_in json|sh|ini\n");
+        if(argc != 4) {
+            fprintf(stderr, "ssparser convert file_in json|sh|ini|update\n");
             return -1;
         }
         ini = iniparser_load_from_file(argv[2]);

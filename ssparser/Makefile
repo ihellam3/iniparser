@@ -1,8 +1,8 @@
 CCPREF = arm-brcm-linux-uclibcgnueabi
-CC      = $(CCPREF)-gcc
-AR	= $(CCPREF)-ar
-#CC = gcc
-#AR = ar
+#CC      = $(CCPREF)-gcc
+#AR	= $(CCPREF)-ar
+CC = gcc
+AR = ar
 RM      = rm -f
 
 
