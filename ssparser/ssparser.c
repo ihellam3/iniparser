@@ -47,6 +47,7 @@ dictionary * iniparser_load_from_file(const char * ininame) {
 int main(int argc, char * argv[], char * envp[]) {
     int n = 0;
     dictionary *ini = NULL, *ini_tmp = NULL;
+    FILE * in = NULL ;
 
     if (argc < 2) {
         fprintf(stderr, "ssparser action args\n");
@@ -74,7 +75,15 @@ int main(int argc, char * argv[], char * envp[]) {
             iniparser_freedict(ini_tmp);
         }
 
-        iniparser_dump_sh(ini, stdout);
+        if ((in=fopen(argv[2], "w"))==NULL) {
+            fprintf(stderr, "iniparser: cannot open %s\n", argv[2]);
+            iniparser_freedict(ini);
+            return -1;
+        }
+        iniparser_dump_sh(ini, in);
+        fclose(in);
+        in = NULL;
+
         iniparser_freedict(ini);
     } else if(!strcmp(argv[1], "convert")) {
         if(argc != 4) {
@@ -107,7 +116,15 @@ int main(int argc, char * argv[], char * envp[]) {
                     free(this_env);
                 }
             }
-            iniparser_dump_sh(ini, stdout);
+
+            if ((in=fopen(argv[2], "w"))==NULL) {
+                fprintf(stderr, "iniparser: cannot open %s\n", argv[2]);
+                iniparser_freedict(ini);
+                return -1;
+            }
+            iniparser_dump_sh(ini, in);
+            fclose(in);
+            in = NULL;
         } else {
                 fprintf(stderr, "output format:%s not found\n", argv[3]);
         }
